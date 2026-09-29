@@ -559,25 +559,27 @@ $form.MinimumSize = New-Object System.Drawing.Size(680, 560)
 $form.StartPosition = 'CenterScreen'
 $form.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
 
-# ---------------- Printer selection ----------------
+# ---------------- Top panel (printer + language) ----------------
+$pnlTop = New-Object System.Windows.Forms.Panel
+$pnlTop.Dock = [System.Windows.Forms.DockStyle]::Top
+$pnlTop.Height = 40
+
 $lblPrinter = New-Object System.Windows.Forms.Label
-$lblPrinter.Location = New-Object System.Drawing.Point(14, 18)
 $lblPrinter.AutoSize = $true
+$lblPrinter.Location = New-Object System.Drawing.Point(14, 12)
 
 $cmbPrinter = New-Object System.Windows.Forms.ComboBox
-$cmbPrinter.Location = New-Object System.Drawing.Point(80, 14)
-$cmbPrinter.Size = New-Object System.Drawing.Size(360, 26)
 $cmbPrinter.DropDownStyle = 'DropDownList'
+$cmbPrinter.Location = New-Object System.Drawing.Point(80, 8)
 
-# ---------------- Language selection ----------------
 $lblLang = New-Object System.Windows.Forms.Label
-$lblLang.Location = New-Object System.Drawing.Point(450, 18)
 $lblLang.AutoSize = $true
+$lblLang.Location = New-Object System.Drawing.Point(500, 12)
 
 $cmbLang = New-Object System.Windows.Forms.ComboBox
-$cmbLang.Location = New-Object System.Drawing.Point(525, 14)
-$cmbLang.Size = New-Object System.Drawing.Size(150, 26)
 $cmbLang.DropDownStyle = 'DropDownList'
+$cmbLang.Size = New-Object System.Drawing.Size(150, 26)
+$cmbLang.Location = New-Object System.Drawing.Point(650, 8)
 $cmbLang.Items.AddRange(@('简体中文','English','繁體中文','日本語','한국어','Deutsch','Français','Español'))
 $cmbLang.add_SelectedIndexChanged({
     param($sender, $e)
@@ -588,53 +590,47 @@ $cmbLang.add_SelectedIndexChanged({
     }
 })
 
+$pnlTop.Controls.Add($lblPrinter)
+$pnlTop.Controls.Add($cmbPrinter)
+$pnlTop.Controls.Add($lblLang)
+$pnlTop.Controls.Add($cmbLang)
+
 # Enumerate printers
 $printers = [System.Drawing.Printing.PrinterSettings]::InstalledPrinters
 foreach ($p in $printers) { [void]$cmbPrinter.Items.Add([string]$p) }
 if ($cmbPrinter.Items.Count -gt 0) { $cmbPrinter.SelectedIndex = 0 }
 
-$form.Controls.Add($lblPrinter)
-$form.Controls.Add($cmbPrinter)
-$form.Controls.Add($lblLang)
-$form.Controls.Add($cmbLang)
-
-# ---------------- Print parameters ----------------
+# ---------------- Print parameters GroupBox ----------------
 $grpParam = New-Object System.Windows.Forms.GroupBox
-$grpParam.Location = New-Object System.Drawing.Point(14, 52)
-$grpParam.Size = New-Object System.Drawing.Size(716, 88)
+$grpParam.Dock = [System.Windows.Forms.DockStyle]::Top
+$grpParam.Height = 100
 
 $lblCopies = New-Object System.Windows.Forms.Label
-$lblCopies.Location = New-Object System.Drawing.Point(16, 28)
 $lblCopies.AutoSize = $true
 
 $numCopies = New-Object System.Windows.Forms.NumericUpDown
-$numCopies.Location = New-Object System.Drawing.Point(60, 24)
-$numCopies.Size = New-Object System.Drawing.Size(60, 24)
+$numCopies.Size = New-Object System.Drawing.Size(50, 24)
 $numCopies.Minimum = 1
 $numCopies.Maximum = 99
 $numCopies.Value = 1
 
 $lblDuplex = New-Object System.Windows.Forms.Label
-$lblDuplex.Location = New-Object System.Drawing.Point(150, 28)
 $lblDuplex.AutoSize = $true
 
 $cmbDuplex = New-Object System.Windows.Forms.ComboBox
-$cmbDuplex.Location = New-Object System.Drawing.Point(195, 24)
-$cmbDuplex.Size = New-Object System.Drawing.Size(170, 26)
+$cmbDuplex.Size = New-Object System.Drawing.Size(160, 26)
 $cmbDuplex.DropDownStyle = 'DropDownList'
 
 $lblOrient = New-Object System.Windows.Forms.Label
-$lblOrient.Location = New-Object System.Drawing.Point(380, 28)
 $lblOrient.AutoSize = $true
 
 $cmbOrient = New-Object System.Windows.Forms.ComboBox
-$cmbOrient.Location = New-Object System.Drawing.Point(440, 24)
-$cmbOrient.Size = New-Object System.Drawing.Size(120, 26)
+$cmbOrient.Size = New-Object System.Drawing.Size(130, 26)
 $cmbOrient.DropDownStyle = 'DropDownList'
 
 $lblTip = New-Object System.Windows.Forms.Label
-$lblTip.Location = New-Object System.Drawing.Point(16, 60)
-$lblTip.Size = New-Object System.Drawing.Size(680, 20)
+$lblTip.Location = New-Object System.Drawing.Point(16, 58)
+$lblTip.Size = New-Object System.Drawing.Size(680, 36)
 $lblTip.ForeColor = [System.Drawing.Color]::Gray
 $lblTip.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 8)
 
@@ -642,60 +638,118 @@ $grpParam.Controls.Add($lblCopies);  $grpParam.Controls.Add($numCopies)
 $grpParam.Controls.Add($lblDuplex);  $grpParam.Controls.Add($cmbDuplex)
 $grpParam.Controls.Add($lblOrient);  $grpParam.Controls.Add($cmbOrient)
 $grpParam.Controls.Add($lblTip)
-$form.Controls.Add($grpParam)
 
-# ---------------- File list ----------------
+# ---------------- Button panel ----------------
+$pnlBtns = New-Object System.Windows.Forms.Panel
+$pnlBtns.Dock = [System.Windows.Forms.DockStyle]::Top
+$pnlBtns.Height = 44
+
 $btnAdd = New-Object System.Windows.Forms.Button
-$btnAdd.Location = New-Object System.Drawing.Point(14, 152)
-$btnAdd.Size = New-Object System.Drawing.Size(96, 30)
+$btnAdd.Size = New-Object System.Drawing.Size(130, 30)
+$btnAdd.Location = New-Object System.Drawing.Point(14, 8)
 
 $btnRemove = New-Object System.Windows.Forms.Button
-$btnRemove.Location = New-Object System.Drawing.Point(118, 152)
-$btnRemove.Size = New-Object System.Drawing.Size(96, 30)
+$btnRemove.Size = New-Object System.Drawing.Size(130, 30)
+$btnRemove.Location = New-Object System.Drawing.Point(152, 8)
 
 $btnClear = New-Object System.Windows.Forms.Button
-$btnClear.Location = New-Object System.Drawing.Point(222, 152)
-$btnClear.Size = New-Object System.Drawing.Size(96, 30)
+$btnClear.Size = New-Object System.Drawing.Size(100, 30)
+$btnClear.Location = New-Object System.Drawing.Point(290, 8)
 
 $lblCount = New-Object System.Windows.Forms.Label
-$lblCount.Location = New-Object System.Drawing.Point(330, 158)
 $lblCount.AutoSize = $true
 $lblCount.ForeColor = [System.Drawing.Color]::Gray
+$lblCount.Location = New-Object System.Drawing.Point(405, 14)
 
+$pnlBtns.Controls.Add($btnAdd)
+$pnlBtns.Controls.Add($btnRemove)
+$pnlBtns.Controls.Add($btnClear)
+$pnlBtns.Controls.Add($lblCount)
+
+# ---------------- File list (Fill) ----------------
 $listFiles = New-Object System.Windows.Forms.ListBox
-$listFiles.Location = New-Object System.Drawing.Point(14, 190)
-$listFiles.Size = New-Object System.Drawing.Size(716, 220)
+$listFiles.Dock = [System.Windows.Forms.DockStyle]::Fill
 $listFiles.SelectionMode = 'MultiExtended'
 $listFiles.HorizontalScrollbar = $true
 
-$form.Controls.Add($btnAdd)
-$form.Controls.Add($btnRemove)
-$form.Controls.Add($btnClear)
-$form.Controls.Add($lblCount)
-$form.Controls.Add($listFiles)
+# ---------------- Log + print button (Bottom panel) ----------------
+$pnlBottom = New-Object System.Windows.Forms.Panel
+$pnlBottom.Dock = [System.Windows.Forms.DockStyle]::Bottom
+$pnlBottom.Height = 160
 
-# ---------------- Log area ----------------
 $txtLog = New-Object System.Windows.Forms.TextBox
-$txtLog.Location = New-Object System.Drawing.Point(14, 430)
-$txtLog.Size = New-Object System.Drawing.Size(716, 110)
+$txtLog.Dock = [System.Windows.Forms.DockStyle]::Bottom
+$txtLog.Height = 110
 $txtLog.Multiline = $true
 $txtLog.ReadOnly = $true
 $txtLog.ScrollBars = 'Vertical'
 $txtLog.BackColor = [System.Drawing.Color]::FromArgb(250, 250, 250)
 $txtLog.Font = New-Object System.Drawing.Font('Consolas', 9)
 
-$form.Controls.Add($txtLog)
-
-# ---------------- Print button ----------------
 $btnPrint = New-Object System.Windows.Forms.Button
-$btnPrint.Location = New-Object System.Drawing.Point(620, 552)
-$btnPrint.Size = New-Object System.Drawing.Size(110, 40)
+$btnPrint.Size = New-Object System.Drawing.Size(150, 40)
 $btnPrint.BackColor = [System.Drawing.Color]::FromArgb(61, 90, 241)
 $btnPrint.ForeColor = [System.Drawing.Color]::White
 $btnPrint.FlatStyle = 'Flat'
 $btnPrint.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 10, [System.Drawing.FontStyle]::Bold)
 
-$form.Controls.Add($btnPrint)
+$pnlBottom.Controls.Add($txtLog)
+$pnlBottom.Controls.Add($btnPrint)
+
+# Dock order: Fill first (bottom of z-order), then edges, then top panels last (top of z-order)
+$form.Controls.Add($listFiles)
+$form.Controls.Add($pnlBottom)
+$form.Controls.Add($pnlBtns)
+$form.Controls.Add($grpParam)
+$form.Controls.Add($pnlTop)
+
+# ---------------- Dynamic horizontal layout ----------------
+# Measures each label's preferred width and places the next control right
+# after it. Called on startup, language switch, and window resize.
+function Adjust-Layout {
+    $pad = 8
+
+    # --- top panel: printer left (stretches) | language right ---
+    $pw = [int]$pnlTop.ClientSize.Width
+    $cw = [int]$cmbLang.Width
+    $cmbLang.Location = New-Object System.Drawing.Point(($pw - 14 - $cw), 8)
+    $lw = [int]$lblLang.PreferredSize.Width
+    $lblLang.Location = New-Object System.Drawing.Point(($cmbLang.Left - $pad - $lw), 12)
+
+    $lblPrinter.Location = New-Object System.Drawing.Point(14, 12)
+    $pw2 = [int]$lblPrinter.PreferredSize.Width
+    $cmbPrinter.Location = New-Object System.Drawing.Point((14 + $pw2 + $pad), 8)
+    $cmbPrinter.Width = [Math]::Max(120, ($lblLang.Left - $pad - $cmbPrinter.Left))
+
+    # --- GroupBox inner row ---
+    $gw = [int]$grpParam.ClientSize.Width
+    $lblTip.Width = ($gw - 32)
+
+    $x = 16
+    $lblCopies.Location = New-Object System.Drawing.Point($x, 28)
+    $cw2 = [int]$lblCopies.PreferredSize.Width
+    $numCopies.Location = New-Object System.Drawing.Point(($x + $cw2 + $pad), 24)
+    $x = [int]$numCopies.Right + 18
+
+    $lblDuplex.Location = New-Object System.Drawing.Point($x, 28)
+    $cw3 = [int]$lblDuplex.PreferredSize.Width
+    $cmbDuplex.Location = New-Object System.Drawing.Point(($x + $cw3 + $pad), 24)
+    $x = [int]$cmbDuplex.Right + 18
+
+    $lblOrient.Location = New-Object System.Drawing.Point($x, 28)
+    $cw4 = [int]$lblOrient.PreferredSize.Width
+    $cmbOrient.Location = New-Object System.Drawing.Point(($x + $cw4 + $pad), 24)
+
+    # --- button panel: buttons flow left, count after them ---
+    $btnAdd.Location = New-Object System.Drawing.Point(14, 8)
+    $btnRemove.Location = New-Object System.Drawing.Point(($btnAdd.Right + 8), 8)
+    $btnClear.Location = New-Object System.Drawing.Point(($btnRemove.Right + 8), 8)
+    $lblCount.Location = New-Object System.Drawing.Point(($btnClear.Right + 12), 14)
+
+    # --- print button: top-right of the bottom panel, above the log box ---
+    $pbw = [int]$pnlBottom.ClientSize.Width
+    $btnPrint.Location = New-Object System.Drawing.Point(($pbw - 14 - 150), 6)
+}
 
 # ---------------- Functions ----------------
 function Add-Log([string]$msg) {
@@ -733,6 +787,7 @@ function Set-UIStrings {
     else { $cmbOrient.SelectedIndex = 0 }
 
     Refresh-List
+    Adjust-Layout
 }
 
 function Add-Files {
@@ -1077,6 +1132,10 @@ $listFiles.add_DragDrop({
 $form.add_FormClosing({
     param($sender, $e)
     $script:abort = $true
+})
+
+$form.add_SizeChanged({
+    Adjust-Layout
 })
 
 # ---------------- Startup ----------------

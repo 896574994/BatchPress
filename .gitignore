@@ -1,0 +1,12 @@
+# 备份与临时文件
+_backup/
+_shots/
+*.bak
+*.log
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+
+# 打包产物
+*.zip

@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="appTitle">批量打印工具</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='13' rx='2' fill='%233d5af1'/%3E%3Crect x='6' y='2' width='12' height='3' fill='%238ca3ff'/%3E%3Crect x='5' y='10' width='4' height='3' fill='%23ffffff'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f4f5f7;
+    --panel:#ffffff;
+    --ink:#1c2230;
+    --muted:#6b7485;
+    --line:#e3e6ec;
+    --brand:#3d5af1;
+    --brand-dark:#2c46c9;
+    --brand-soft:#eef1ff;
+    --ok:#1a9c63;
+    --warn:#c7761a;
+    --danger:#d64545;
+    --radius:12px;
+    --shadow:0 1px 3px rgba(20,28,50,.06), 0 8px 24px rgba(20,28,50,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;
+    font-size:14px;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,select{font-family:inherit}
+
+  /* ===== 顶栏 ===== */
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:16px 24px;background:var(--panel);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{
+    width:40px;height:40px;border-radius:10px;background:var(--brand);
+    display:grid;place-items:center;flex:none;
+  }
+  .brand .logo svg{width:22px;height:22px}
+  .brand h1{font-size:17px;font-weight:700;letter-spacing:.2px}
+  .brand p{font-size:12px;color:var(--muted)}
+  .head-actions{display:flex;gap:10px;align-items:center}
+  .lang-select{
+    height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);color:var(--text);font-size:13px;cursor:pointer;outline:none;
+  }
+  .lang-select:focus{border-color:var(--brand)}
+
+
+  /* ===== 按钮 ===== */
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:9px 16px;border-radius:9px;font-size:13.5px;font-weight:600;
+    transition:background .15s, transform .05s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn svg{width:16px;height:16px}
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-primary:disabled{background:#aab3d8;cursor:not-allowed}
+  .btn-ghost{background:var(--bg);color:var(--ink)}
+  .btn-ghost:hover{background:#e9ebf0}
+  .btn-danger-ghost{color:var(--danger)}
+  .btn-danger-ghost:hover{background:#fdecec}
+
+  /* ===== 统计条 ===== */
+  .stats{
+    display:flex;gap:22px;flex-wrap:wrap;padding:14px 24px;
+    background:var(--panel);border-bottom:1px solid var(--line);
+  }
+  .stat{display:flex;flex-direction:column}
+  .stat b{font-size:20px;font-weight:700;color:var(--ink)}
+  .stat span{font-size:12px;color:var(--muted)}
+
+  /* ===== 批量设置条 ===== */
+  .batchbar{
+    display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+    padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--line);
+  }
+  .batchbar .bb-title{font-size:13px;font-weight:700;padding-bottom:8px}
+  .batchbar .bb-note{font-size:11.5px;color:var(--muted);padding-bottom:8px}
+
+  /* ===== 主区 ===== */
+  main{padding:22px 24px;max-width:1400px;margin:0 auto;width:100%}
+
+  .dropzone{
+    border:2px dashed #c9cfdb;border-radius:var(--radius);
+    padding:36px 20px;text-align:center;cursor:pointer;
+    background:var(--panel);transition:border-color .15s,background .15s;
+  }
+  .dropzone:hover,.dropzone.dragover{border-color:var(--brand);background:var(--brand-soft)}
+  .dropzone .dz-icon{width:44px;height:44px;margin:0 auto 10px;color:var(--brand)}
+  .dropzone .dz-icon svg{width:44px;height:44px}
+  .dropzone h2{font-size:15px;font-weight:600;margin-bottom:4px}
+  .dropzone p{font-size:12.5px;color:var(--muted)}
+  .dropzone .dz-btn{margin-top:12px}
+
+  .empty-hint{text-align:center;color:var(--muted);padding:46px 0;font-size:13px}
+
+  /* 本地版引导横幅 */
+  .office-banner{
+    display:none;align-items:flex-start;gap:12px;margin-top:16px;
+    padding:14px 16px;border-radius:var(--radius);
+    background:#fff7ec;border:1px solid #f0c98a;color:#8a5a12;
+  }
+  .office-banner.show{display:flex}
+  .office-banner .ob-icon{flex:none;margin-top:1px}
+  .office-banner .ob-icon svg{width:20px;height:20px}
+  .office-banner b{font-size:13.5px}
+  .office-banner p{font-size:12.5px;margin-top:3px;line-height:1.7}
+  .office-banner .ob-steps{font-size:12.5px;margin-top:6px;line-height:1.8}
+  .office-banner .ob-steps code{
+    background:#f5e7cd;border-radius:4px;padding:1px 6px;font-family:Consolas,monospace;font-size:12px;
+  }
+
+  /* 文件列表 */
+  .file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:20px}
+  .file-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;box-shadow:var(--shadow);
+    display:flex;flex-direction:column;
+  }
+  .file-card.checked{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+  .file-card .card-top{display:flex;align-items:center;gap:12px;padding:13px 14px 0}
+  .file-thumb{
+    width:44px;height:44px;border-radius:8px;flex:none;overflow:hidden;
+    background:var(--brand-soft);display:grid;place-items:center;
+  }
+  .file-thumb img{width:100%;height:100%;object-fit:cover}
+  .file-thumb .type-badge{
+    font-size:10.5px;font-weight:700;color:var(--brand);letter-spacing:.5px;
+  }
+  .file-meta{flex:1;min-width:0}
+  .file-meta .fname{
+    font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .file-meta .fsize{font-size:11.5px;color:var(--muted)}
+  .file-meta .fstatus{font-size:11.5px;font-weight:600;margin-top:1px}
+  .fstatus.ok{color:var(--ok)}
+  .fstatus.warn{color:var(--warn)}
+  .fstatus.err{color:var(--danger)}
+  .file-card .card-body{padding:11px 14px;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-size:11px;color:var(--muted)}
+  .field select,.field input[type=number]{
+    padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:13px;background:#fff;
+  }
+  .field select:focus,.field input[type=number]:focus{outline:2px solid var(--brand-soft);border-color:var(--brand)}
+  .field.copies input[type=number]{width:64px}
+  .field.orient select{width:96px}
+  .file-card .card-foot{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 12px;border-top:1px solid var(--line);background:#fafbfc;
+  }
+  .card-foot .actions{display:flex;gap:6px}
+  .icon-btn{
+    width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--muted);
+    transition:background .15s,color .15s;
+  }
+  .icon-btn:hover{background:#e9ebf0;color:var(--ink)}
+  .icon-btn.danger:hover{background:#fdecec;color:var(--danger)}
+  .icon-btn svg{width:16px;height:16px}
+  .check-btn{
+    display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);padding:5px 8px;border-radius:7px;
+  }
+  .check-btn:hover{background:#eef0f4}
+  .check-btn .box{
+    width:16px;height:16px;border:1.5px solid #c9cfdb;border-radius:4px;display:grid;place-items:center;
+    transition:background .15s,border-color .15s;
+  }
+  .check-btn.checked .box{background:var(--brand);border-color:var(--brand)}
+  .check-btn.checked .box svg{display:block}
+  .check-btn .box svg{width:11px;height:11px;color:#fff;display:none}
+
+  /* ===== 底部打印控制条 ===== */
+  .printbar{
+    position:sticky;bottom:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:14px 24px;background:var(--panel);border-top:1px solid var(--line);
+    box-shadow:0 -6px 20px rgba(20,28,50,.05);
+  }
+  .printbar .info{font-size:12.5px;color:var(--muted)}
+  .printbar .info b{color:var(--ink)}
+  .printbar .right{display:flex;align-items:center;gap:12px}
+  .progress{
+    display:none;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);
+  }
+  .progress .track{width:130px;height:6px;background:#e5e8ef;border-radius:99px;overflow:hidden}
+  .progress .bar{height:100%;background:var(--brand);border-radius:99px;width:0;transition:width .2s}
+  .progress.show{display:flex}
+
+  /* toast */
+  .toast{
+    position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(10px);
+    background:#232a3a;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:80vw;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* 预览弹层 */
+  .preview-mask{
+    position:fixed;inset:0;background:rgba(15,20,35,.55);z-index:60;
+    display:none;align-items:center;justify-content:center;padding:24px;
+  }
+  .preview-mask.show{display:flex}
+  .preview-box{
+    background:#fff;border-radius:14px;width:min(880px,94vw);height:min(84vh,860px);
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.3);
+  }
+  .preview-box .p-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .preview-box .p-head b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .preview-box .p-body{flex:1;overflow:auto;background:#eef0f3;position:relative}
+  .p-body .pdf-embed{width:100%;height:100%;border:none}
+  .p-body .img-view{max-width:100%;max-height:100%;display:block;margin:auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+  .p-body .txt-view{background:#fff;max-width:760px;margin:20px auto;padding:34px 40px;box-shadow:0 2px 12px rgba(0,0,0,.12);white-space:pre-wrap;font-family:"Microsoft YaHei",sans-serif;font-size:15px;line-height:1.8}
+  .p-body .unsupported{display:grid;place-items:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:30px}
+
+  @media (max-width:720px){
+    main{padding:16px}
+    .file-grid{grid-template-columns:1fr}
+    header{padding:14px 16px}
+    .stats{padding:12px 16px}
+    .printbar{padding:12px 16px}
+    .head-actions .btn-text{display:none}
+    .brand p{display:none}
+  }
+.lang-btn.active{background:#dfe6ff;color:#3d5af1;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="13" rx="2" fill="#fff"/><rect x="6" y="2" width="12" height="3" fill="#b9c6ff"/><rect x="5" y="10" width="4" height="3" fill="#3d5af1"/><circle cx="17" cy="14" r="2" fill="#3d5af1"/></svg>
+    </div>
+    <div>
+      <h1 data-i18n="appTitle">批量打印工具</h1>
+      <p data-i18n="subtitle">一次添加多个文件，统一设置并逐个打印</p>
+    </div>
+  </div>
+    <div class="head-actions">
+    <select class="lang-select" id="langSelect" aria-label="Language">
+      <option value="zh-CN">简体中文</option>
+      <option value="zh-TW">繁體中文</option>
+      <option value="en-US">English</option>
+      <option value="ja-JP">日本語</option>
+      <option value="ko-KR">한국어</option>
+      <option value="de-DE">Deutsch</option>
+      <option value="fr-FR">Français</option>
+      <option value="es-ES">Español</option>
+    </select>
+    <button class="btn btn-ghost" id="btnClear">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+      <span class="btn-text" data-i18n="clearList">清空列表</span>
+    </button>
+    <label class="btn btn-primary" for="addInput">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span data-i18n="addFiles">添加文件</span>
+      <input type="file" id="addInput" multiple hidden>
+    </label>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="stat"><b id="stTotal">0</b><span data-i18n="statTotal">文件总数</span></div>
+  <div class="stat"><b id="stSelected">0</b><span data-i18n="statSelected">已选中</span></div>
+  <div class="stat"><b id="stCopies">0</b><span data-i18n="statCopies">合计打印份数</span></div>
+  <div class="stat"><b id="stReady">0</b><span data-i18n="statReady">可打印</span></div>
+</section>
+
+<section class="batchbar">
+  <div class="bb-title" data-i18n="batchTitle">批量设置</div>
+  <div class="field orient">
+    <label data-i18n="orientLabel">纸张方向</label>
+    <select id="batchOrient">
+      <option value="auto" selected data-i18n="orientAuto">自动</option>
+      <option value="portrait" data-i18n="orientPortrait">纵向</option>
+      <option value="landscape" data-i18n="orientLandscape">横向</option>
+    </select>
+  </div>
+  <div class="field copies">
+    <label data-i18n="copiesLabel">打印份数</label>
+    <input type="number" id="batchCopies" min="1" max="99" value="1">
+  </div>
+  <button class="btn btn-ghost" id="btnApplyAll">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M4 15h16"/></svg>
+    <span data-i18n="applyAll">应用到全部文件</span>
+  </button>
+  <span class="bb-note" data-i18n="bbNote">单面/双面、打印机型号、纸型：请在每次弹出的系统打印窗口中选择</span>
+</section>
+
+<main>
+  <div class="dropzone" id="dropzone">
+    <div class="dz-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <h2 data-i18n="dropTitle">拖拽文件到此处，或点击按钮选择</h2>
+    <p data-i18n="dropSub">图片 / PDF / TXT 可直接打印；Word / Excel 请用本地版（启动批量打印.bat）</p>
+    <div class="dz-btn">
+      <label class="btn btn-primary" for="addInput2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span data-i18n="selectFiles">选择文件</span>
+        <input type="file" id="addInput2" multiple hidden>
+      </label>
+    </div>
+  </div>
+
+  <div class="office-banner" id="officeBanner">
+    <div class="ob-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+    </div>
+    <div>
+      <b id="obTitle" data-i18n="obTitle">检测到 Word / Excel 文档</b>
+      <p data-i18n-html="obText">浏览器出于安全限制，<b>无法直接打印 Word / Excel 文件</b>（所有网页均如此，与工具无关）。请使用同目录下的<b>本地版</b>完成批量打印。</p>
+      <div class="ob-steps"><span data-i18n="obSteps1">操作：找到文件夹中的 </span><code data-i18n="obBat">启动批量打印.bat</code><span data-i18n="obSteps2"> 并双击 → 选择打印机 → 添加这 </span><b id="obCount">0</b><span data-i18n="obSteps3"> 个文件 → 开始打印</span></div>
+    </div>
+  </div>
+
+  <div class="file-grid" id="grid"></div>
+  <div class="empty-hint" id="emptyHint" style="display:none" data-i18n="emptyHint">列表为空，先添加要打印的文件</div>
+</main>
+
+<div class="printbar">
+  <div class="info"><span data-i18n="barInfo1">已选 </span><b id="barSelected">0</b><span data-i18n="barInfo2"> 个文件 · 合计 </span><b id="barCopies">0</b><span data-i18n="barInfo3"> 份</span></div>
+  <div class="right">
+    <div class="progress" id="progress">
+      <span id="progText">0 / 0</span>
+      <div class="track"><div class="bar" id="progBar"></div></div>
+    </div>
+    <button class="btn btn-ghost" id="btnSelectAll">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v16H4z"/><path d="M8 3v18M16 3v18"/></svg>
+      <span id="btnSelectAllText"></span>
+    </button>
+    <button class="btn btn-primary" id="btnPrint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span data-i18n="startPrint">开始打印</span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="preview-mask" id="previewMask">
+  <div class="preview-box">
+    <div class="p-head">
+      <b id="pvName" data-i18n="preview">预览</b>
+      <button class="icon-btn" id="pvClose" style="color:#555">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-body" id="pvBody"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+
+  /* ---------- 多语言 ---------- */
+  const I18N = {
+    "zh-CN": {
+      appTitle: "批量打印工具",
+      subtitle: "一次添加多个文件，统一设置并逐个打印",
+      clearList: "清空列表",
+      addFiles: "添加文件",
+      statTotal: "文件总数",
+      statSelected: "已选中",
+      statCopies: "合计打印份数",
+      statReady: "可打印",
+      batchTitle: "批量设置",
+      orientLabel: "纸张方向",
+      copiesLabel: "打印份数",
+      orientAuto: "自动",
+      orientPortrait: "纵向",
+      orientLandscape: "横向",
+      applyAll: "应用到全部文件",
+      bbNote: "单面/双面、打印机型号、纸型：请在每次弹出的系统打印窗口中选择",
+      dropTitle: "拖拽文件到此处，或点击按钮选择",
+      dropSub: "图片 / PDF / TXT 可直接打印；Word / Excel 请用本地版（启动批量打印.bat）",
+      selectFiles: "选择文件",
+      obTitle: "检测到 Word / Excel 文档",
+      obText: "浏览器出于安全限制，<b>无法直接打印 Word / Excel 文件</b>（所有网页均如此，与工具无关）。请使用同目录下的<b>本地版</b>完成批量打印。",
+      obSteps1: "操作：找到文件夹中的 ",
+      obSteps2: " 并双击 → 选择打印机 → 添加这 ",
+      obSteps3: " 个文件 → 开始打印",
+      obBat: "启动批量打印.bat",
+      emptyHint: "列表为空，先添加要打印的文件",
+      barInfo1: "已选 ",
+      barInfo2: " 个文件 · 合计 ",
+      barInfo3: " 份",
+      selectAll: "全选",
+      deselectAll: "取消全选",
+      startPrint: "开始打印",
+      preview: "预览",
+      checked: "已勾选",
+      unchecked: "未勾选",
+      moveUp: "上移",
+      moveDown: "下移",
+      remove: "删除",
+      stOffice: "Word/Excel 文档，请用本地版打印",
+      stOther: "浏览器无法直接打印此类型",
+      stTooLarge: "过大，预览已跳过",
+      stReady: "可打印",
+      toastEmpty: "列表为空，请先添加文件",
+      toastApplied: "已应用到全部 {n} 个文件",
+      toastCleared: "已清空列表",
+      toastNoPreview: "此类型浏览器无法预览，请用本地版打印",
+      toastOfficeHint: "检测到 Word/Excel 文档，请双击同目录的 启动批量打印.bat 用本地版打印",
+      toastNoFiles: "没有可打印的文件",
+      toastDone: "已打印 {n} 个文件",
+      toastAborted: "已打印 {n} 个文件，流程已中止",
+      toastNone: "未执行打印",
+      toastDup: "已忽略重复文件（同名同大小同修改时间）",
+    },
+    "en-US": {
+      appTitle: "Batch Print Tool",
+      subtitle: "Add multiple files, batch-apply settings, print one by one",
+      clearList: "Clear List",
+      addFiles: "Add Files",
+      statTotal: "Total Files",
+      statSelected: "Selected",
+      statCopies: "Total Copies",
+      statReady: "Printable",
+      batchTitle: "Batch Settings",
+      orientLabel: "Orientation",
+      copiesLabel: "Copies",
+      orientAuto: "Auto",
+      orientPortrait: "Portrait",
+      orientLandscape: "Landscape",
+      applyAll: "Apply to All",
+      bbNote: "One/Two-sided, printer model, paper size: choose in the system print dialog each time",
+      dropTitle: "Drag files here or click to select",
+      dropSub: "Images / PDF / TXT print directly; Word / Excel use the local version (start.bat)",
+      selectFiles: "Select Files",
+      obTitle: "Word / Excel files detected",
+      obText: "Browsers cannot <b>directly print Word / Excel files</b> for security reasons (same for all web pages). Use the <b>local version</b> in the same folder.",
+      obSteps1: "Steps: find and double-click ",
+      obSteps2: " → choose a printer → add these ",
+      obSteps3: " file(s) → Start Printing",
+      obBat: "start.bat",
+      emptyHint: "List is empty, add files first",
+      barInfo1: "Selected: ",
+      barInfo2: " files · Total ",
+      barInfo3: " copies",
+      selectAll: "Select All",
+      deselectAll: "Deselect All",
+      startPrint: "Start Printing",
+      preview: "Preview",
+      checked: "Selected",
+      unchecked: "Not Selected",
+      moveUp: "Move Up",
+      moveDown: "Move Down",
+      remove: "Remove",
+      stOffice: "Word/Excel files, print with the local version",
+      stOther: "Browser cannot print this type directly",
+      stTooLarge: "Too large, preview skipped",
+      stReady: "Printable",
+      toastEmpty: "List is empty, add files first",
+      toastApplied: "Applied to all {n} files",
+      toastCleared: "List cleared",
+      toastNoPreview: "This type cannot be previewed in browser, use the local version",
+      toastOfficeHint: "Word/Excel detected. Double-click start.bat in the same folder to print with the local version",
+      toastNoFiles: "No printable files",
+      toastDone: "{n} files printed",
+      toastAborted: "{n} files printed, process aborted",
+      toastNone: "No printing performed",
+      toastDup: "Duplicate files ignored (same name, size and modified time)",
+    },
+    "zh-TW": {
+      appTitle: "批次列印工具",
+      subtitle: "一次加入多個檔案，統一設定並逐個列印",
+      clearList: "清空清單",
+      addFiles: "加入檔案",
+      statTotal: "檔案總數",
+      statSelected: "已選取",
+      statCopies: "合計列印份數",
+      statReady: "可列印",
+      batchTitle: "批次設定",
+      orientLabel: "紙張方向",
+      copiesLabel: "列印份數",
+      orientAuto: "自動",
+      orientPortrait: "直向",
+      orientLandscape: "橫向",
+      applyAll: "套用到全部檔案",
+      bbNote: "單面/雙面、印表機型號、紙張大小：請在每次跳出的系統列印視窗中選擇",
+      dropTitle: "拖曳檔案到這裡，或點按按鈕選擇",
+      dropSub: "圖片 / PDF / TXT 可直接列印；Word / Excel 請用本機版（啟動批量列印.bat）",
+      selectFiles: "選擇檔案",
+      obTitle: "偵測到 Word / Excel 文件",
+      obText: "瀏覽器基於安全限制，<b>無法直接列印 Word / Excel 檔案</b>（所有網頁皆然，與工具無關）。請使用同目錄下的<b>本機版</b>完成批次列印。",
+      obSteps1: "操作：找到資料夾中的 ",
+      obSteps2: " 並雙擊 → 選擇印表機 → 加入這 ",
+      obSteps3: " 個檔案 → 開始列印",
+      obBat: "啟動批量列印.bat",
+      emptyHint: "清單為空，先加入要列印的檔案",
+      barInfo1: "已選 ",
+      barInfo2: " 個檔案 · 合計 ",
+      barInfo3: " 份",
+      selectAll: "全選",
+      deselectAll: "取消全選",
+      startPrint: "開始列印",
+      preview: "預覽",
+      checked: "已勾選",
+      unchecked: "未勾選",
+      moveUp: "上移",
+      moveDown: "下移",
+      remove: "刪除",
+      stOffice: "Word/Excel 文件，請用本機版列印",
+      stOther: "瀏覽器無法直接列印此類型",
+      stTooLarge: "過大，預覽已略過",
+      stReady: "可列印",
+      toastEmpty: "清單為空，請先加入檔案",
+      toastApplied: "已套用到全部 {n} 個檔案",
+      toastCleared: "已清空清單",
+      toastNoPreview: "此類型瀏覽器無法預覽，請用本機版列印",
+      toastOfficeHint: "偵測到 Word/Excel 文件，請雙擊同目錄的 啟動批量列印.bat 用本機版列印",
+      toastNoFiles: "沒有可列印的檔案",
+      toastDone: "已列印 {n} 個檔案",
+      toastAborted: "已列印 {n} 個檔案，流程已中止",
+      toastNone: "未執行列印",
+      toastDup: "已忽略重複檔案（同名同大小同修改時間）",
+    },
+    "ja-JP": {
+      appTitle: "一括印刷ツール",
+      subtitle: "複数のファイルを追加して設定を統一し、1件ずつ印刷",
+      clearList: "リストをクリア",
+      addFiles: "ファイルを追加",
+      statTotal: "ファイル総数",
+      statSelected: "選択済み",
+      statCopies: "合計印刷部数",
+      statReady: "印刷可能",
+      batchTitle: "一括設定",
+      orientLabel: "用紙の向き",
+      copiesLabel: "印刷部数",
+      orientAuto: "自動",
+      orientPortrait: "縦向き",
+      orientLandscape: "横向き",
+      applyAll: "すべてのファイルに適用",
+      bbNote: "片面/両面、プリンター、用紙サイズ：毎回表示されるシステム印刷ダイアログで選択してください",
+      dropTitle: "ここにファイルをドラッグするか、ボタンをクリックして選択",
+      dropSub: "画像 / PDF / TXT は直接印刷できます；Word / Excel はローカル版（start.bat）を使用してください",
+      selectFiles: "ファイルを選択",
+      obTitle: "Word / Excel ファイルを検出",
+      obText: "ブラウザーのセキュリティ制限により、<b>Word / Excel ファイルを直接印刷できません</b>（すべてのWebページで同様です）。同じフォルダーの<b>ローカル版</b>を使用してください。",
+      obSteps1: "操作：フォルダー内の ",
+      obSteps2: " をダブルクリック → プリンターを選択 → この ",
+      obSteps3: " ファイルを追加 → 印刷開始",
+      obBat: "start.bat",
+      emptyHint: "リストが空です。印刷するファイルを追加してください",
+      barInfo1: "選択: ",
+      barInfo2: " ファイル · 合計 ",
+      barInfo3: " 部",
+      selectAll: "すべて選択",
+      deselectAll: "選択を解除",
+      startPrint: "印刷開始",
+      preview: "プレビュー",
+      checked: "選択済み",
+      unchecked: "未選択",
+      moveUp: "上へ",
+      moveDown: "下へ",
+      remove: "削除",
+      stOffice: "Word/Excel ファイル、ローカル版で印刷してください",
+      stOther: "ブラウザーで直接印刷できない形式です",
+      stTooLarge: "大きすぎるためプレビューを省略",
+      stReady: "印刷可能",
+      toastEmpty: "リストが空です。先にファイルを追加してください",
+      toastApplied: "すべての {n} ファイルに適用しました",
+      toastCleared: "リストをクリアしました",
+      toastNoPreview: "この形式はブラウザーでプレビューできません。ローカル版で印刷してください",
+      toastOfficeHint: "Word/Excel ファイルを検出。同じフォルダーの start.bat をダブルクリックしてローカル版で印刷してください",
+      toastNoFiles: "印刷できるファイルがありません",
+      toastDone: "{n} ファイルを印刷しました",
+      toastAborted: "{n} ファイルを印刷しました。処理を中止しました",
+      toastNone: "印刷は実行されませんでした",
+      toastDup: "重複ファイルを無視しました（同名・同サイズ・同更新時刻）",
+    },
+    "ko-KR": {
+      appTitle: "일괄 인쇄 도구",
+      subtitle: "파일을 여러 개 추가하고 설정을 통일한 후 하나씩 인쇄",
+      clearList: "목록 지우기",
+      addFiles: "파일 추가",
+      statTotal: "파일 총수",
+      statSelected: "선택됨",
+      statCopies: "합계 인쇄 매수",
+      statReady: "인쇄 가능",
+      batchTitle: "일괄 설정",
+      orientLabel: "용지 방향",
+      copiesLabel: "인쇄 매수",
+      orientAuto: "자동",
+      orientPortrait: "세로",
+      orientLandscape: "가로",
+      applyAll: "모든 파일에 적용",
+      bbNote: "단면/양면, 프린터 모델, 용지 크기: 매번 나타나는 시스템 인쇄 창에서 선택하세요",
+      dropTitle: "파일을 여기로 끌어다 놓거나 버튼을 클릭하여 선택",
+      dropSub: "이미지 / PDF / TXT는 바로 인쇄 가능; Word / Excel은 로컬 버전(start.bat)을 사용하세요",
+      selectFiles: "파일 선택",
+      obTitle: "Word / Excel 파일 감지됨",
+      obText: "브라우저 보안 제한으로 <b>Word / Excel 파일을 직접 인쇄할 수 없습니다</b>(모든 웹페이지가 동일합니다). 같은 폴더의 <b>로컬 버전</b>을 사용하세요.",
+      obSteps1: "방법: 폴더에서 ",
+      obSteps2: " 을(를) 더블 클릭 → 프린터 선택 → 이 ",
+      obSteps3: " 파일 추가 → 인쇄 시작",
+      obBat: "start.bat",
+      emptyHint: "목록이 비어 있습니다. 인쇄할 파일을 먼저 추가하세요",
+      barInfo1: "선택: ",
+      barInfo2: " 파일 · 합계 ",
+      barInfo3: " 부",
+      selectAll: "전체 선택",
+      deselectAll: "전체 선택 해제",
+      startPrint: "인쇄 시작",
+      preview: "미리보기",
+      checked: "선택됨",
+      unchecked: "선택 안 됨",
+      moveUp: "위로",
+      moveDown: "아래로",
+      remove: "삭제",
+      stOffice: "Word/Excel 파일, 로컬 버전으로 인쇄하세요",
+      stOther: "브라우저에서 직접 인쇄할 수 없는 형식",
+      stTooLarge: "너무 커서 미리보기 건너뜀",
+      stReady: "인쇄 가능",
+      toastEmpty: "목록이 비어 있습니다. 파일을 먼저 추가하세요",
+      toastApplied: "모든 {n} 파일에 적용됨",
+      toastCleared: "목록을 지웠습니다",
+      toastNoPreview: "이 형식은 브라우저에서 미리볼 수 없습니다. 로컬 버전으로 인쇄하세요",
+      toastOfficeHint: "Word/Excel 파일 감지됨. 같은 폴더의 start.bat을 더블 클릭하여 로컬 버전으로 인쇄하세요",
+      toastNoFiles: "인쇄할 수 있는 파일이 없습니다",
+      toastDone: "{n}개 파일 인쇄 완료",
+      toastAborted: "{n}개 파일 인쇄 완료, 프로세스 중단",
+      toastNone: "인쇄가 실행되지 않았습니다",
+      toastDup: "중복 파일 무시됨(같은 이름·크기·수정 시간)",
+    },
+    "de-DE": {
+      appTitle: "Stapeldruck-Tool",
+      subtitle: "Mehrere Dateien hinzufügen, Einstellungen vereinheitlichen und einzeln drucken",
+      clearList: "Liste leeren",
+      addFiles: "Dateien hinzufügen",
+      statTotal: "Dateien gesamt",
+      statSelected: "Ausgewählt",
+      statCopies: "Gesamtdrucke",
+      statReady: "Druckbar",
+      batchTitle: "Stapeleinstellungen",
+      orientLabel: "Papierausrichtung",
+      copiesLabel: "Exemplare",
+      orientAuto: "Automatisch",
+      orientPortrait: "Hochformat",
+      orientLandscape: "Querformat",
+      applyAll: "Auf alle Dateien anwenden",
+      bbNote: "Einseitig/zweiseitig, Druckermodell, Papierformat: wählen Sie dies jedes Mal im System-Druckdialog",
+      dropTitle: "Dateien hierher ziehen oder per Klick auswählen",
+      dropSub: "Bilder / PDF / TXT direkt druckbar; Word / Excel mit der lokalen Version (start.bat)",
+      selectFiles: "Dateien auswählen",
+      obTitle: "Word / Excel-Dateien erkannt",
+      obText: "Aus Sicherheitsgründen kann der Browser <b>Word / Excel-Dateien nicht direkt drucken</b> (gilt für alle Webseiten). Verwenden Sie die <b>lokale Version</b> im selben Ordner.",
+      obSteps1: "Schritte: Doppelklick auf ",
+      obSteps2: " → Drucker wählen → diese ",
+      obSteps3: " Datei(en) hinzufügen → Druck starten",
+      obBat: "start.bat",
+      emptyHint: "Liste ist leer, fügen Sie zuerst Dateien hinzu",
+      barInfo1: "Ausgewählt: ",
+      barInfo2: " Dateien · Gesamt ",
+      barInfo3: " Kopien",
+      selectAll: "Alle auswählen",
+      deselectAll: "Auswahl aufheben",
+      startPrint: "Druck starten",
+      preview: "Vorschau",
+      checked: "Ausgewählt",
+      unchecked: "Nicht ausgewählt",
+      moveUp: "Nach oben",
+      moveDown: "Nach unten",
+      remove: "Entfernen",
+      stOffice: "Word/Excel-Dateien, mit lokaler Version drucken",
+      stOther: "Browser kann diesen Typ nicht direkt drucken",
+      stTooLarge: "Zu groß, Vorschau übersprungen",
+      stReady: "Druckbar",
+      toastEmpty: "Liste ist leer, bitte zuerst Dateien hinzufügen",
+      toastApplied: "Auf alle {n} Dateien angewendet",
+      toastCleared: "Liste geleert",
+      toastNoPreview: "Dieser Typ kann im Browser nicht angezeigt werden, bitte lokale Version verwenden",
+      toastOfficeHint: "Word/Excel erkannt. Doppelklick auf start.bat im selben Ordner zum Drucken mit der lokalen Version",
+      toastNoFiles: "Keine druckbaren Dateien",
+      toastDone: "{n} Dateien gedruckt",
+      toastAborted: "{n} Dateien gedruckt, Prozess abgebrochen",
+      toastNone: "Kein Druck ausgeführt",
+      toastDup: "Doppelte Dateien ignoriert (gleicher Name, Größe und Änderungszeit)",
+    },
+    "fr-FR": {
+      appTitle: "Outil d'impression par lot",
+      subtitle: "Ajoutez plusieurs fichiers, unifiez les réglages et imprimez un par un",
+      clearList: "Vider la liste",
+      addFiles: "Ajouter des fichiers",
+      statTotal: "Fichiers totaux",
+      statSelected: "Sélectionnés",
+      statCopies: "Total des copies",
+      statReady: "Imprimables",
+      batchTitle: "Réglages par lot",
+      orientLabel: "Orientation du papier",
+      copiesLabel: "Nombre de copies",
+      orientAuto: "Automatique",
+      orientPortrait: "Portrait",
+      orientLandscape: "Paysage",
+      applyAll: "Appliquer à tous les fichiers",
+      bbNote: "Recto/verso, modèle d'imprimante, format papier : choisissez à chaque fois dans la fenêtre d'impression système",
+      dropTitle: "Glissez les fichiers ici ou cliquez pour sélectionner",
+      dropSub: "Images / PDF / TXT imprimables directement ; Word / Excel : utilisez la version locale (start.bat)",
+      selectFiles: "Sélectionner des fichiers",
+      obTitle: "Fichiers Word / Excel détectés",
+      obText: "Pour des raisons de sécurité, le navigateur <b>ne peut pas imprimer directement les fichiers Word / Excel</b> (comme toute page web). Utilisez la <b>version locale</b> dans le même dossier.",
+      obSteps1: "Étapes : double-cliquez sur ",
+      obSteps2: " → choisissez une imprimante → ajoutez ces ",
+      obSteps3: " fichier(s) → Imprimer",
+      obBat: "start.bat",
+      emptyHint: "La liste est vide, ajoutez d'abord des fichiers",
+      barInfo1: "Sélectionnés : ",
+      barInfo2: " fichiers · Total ",
+      barInfo3: " copies",
+      selectAll: "Tout sélectionner",
+      deselectAll: "Tout désélectionner",
+      startPrint: "Imprimer",
+      preview: "Aperçu",
+      checked: "Sélectionné",
+      unchecked: "Non sélectionné",
+      moveUp: "Monter",
+      moveDown: "Descendre",
+      remove: "Supprimer",
+      stOffice: "Fichiers Word/Excel, imprimez avec la version locale",
+      stOther: "Le navigateur ne peut pas imprimer ce type directement",
+      stTooLarge: "Trop volumineux, aperçu ignoré",
+      stReady: "Imprimable",
+      toastEmpty: "La liste est vide, ajoutez d'abord des fichiers",
+      toastApplied: "Appliqué à tous les {n} fichiers",
+      toastCleared: "Liste vidée",
+      toastNoPreview: "Ce type ne peut pas être prévisualisé dans le navigateur, utilisez la version locale",
+      toastOfficeHint: "Word/Excel détectés. Double-cliquez sur start.bat dans le même dossier pour imprimer avec la version locale",
+      toastNoFiles: "Aucun fichier imprimable",
+      toastDone: "{n} fichiers imprimés",
+      toastAborted: "{n} fichiers imprimés, processus interrompu",
+      toastNone: "Aucune impression effectuée",
+      toastDup: "Fichiers en double ignorés (même nom, taille et date de modification)",
+    },
+    "es-ES": {
+      appTitle: "Herramienta de impresión por lotes",
+      subtitle: "Agregue varios archivos, unifique la configuración e imprima uno por uno",
+      clearList: "Vaciar lista",
+      addFiles: "Agregar archivos",
+      statTotal: "Archivos totales",
+      statSelected: "Seleccionados",
+      statCopies: "Total de copias",
+      statReady: "Imprimibles",
+      batchTitle: "Configuración por lotes",
+      orientLabel: "Orientación del papel",
+      copiesLabel: "Número de copias",
+      orientAuto: "Automático",
+      orientPortrait: "Vertical",
+      orientLandscape: "Horizontal",
+      applyAll: "Aplicar a todos los archivos",
+      bbNote: "Una/dos caras, modelo de impresora, tamaño de papel: elija cada vez en la ventana de impresión del sistema",
+      dropTitle: "Arrastre los archivos aquí o haga clic para seleccionar",
+      dropSub: "Imágenes / PDF / TXT se imprimen directamente; Word / Excel: use la versión local (start.bat)",
+      selectFiles: "Seleccionar archivos",
+      obTitle: "Archivos Word / Excel detectados",
+      obText: "Por razones de seguridad, el navegador <b>no puede imprimir directamente archivos Word / Excel</b> (igual en todas las páginas web). Use la <b>versión local</b> en la misma carpeta.",
+      obSteps1: "Pasos: haga doble clic en ",
+      obSteps2: " → elija una impresora → agregue estos ",
+      obSteps3: " archivo(s) → Iniciar impresión",
+      obBat: "start.bat",
+      emptyHint: "La lista está vacía, agregue primero los archivos",
+      barInfo1: "Seleccionados: ",
+      barInfo2: " archivos · Total ",
+      barInfo3: " copias",
+      selectAll: "Seleccionar todo",
+      deselectAll: "Deseleccionar todo",
+      startPrint: "Iniciar impresión",
+      preview: "Vista previa",
+      checked: "Seleccionado",
+      unchecked: "No seleccionado",
+      moveUp: "Subir",
+      moveDown: "Bajar",
+      remove: "Eliminar",
+      stOffice: "Archivos Word/Excel, imprima con la versión local",
+      stOther: "El navegador no puede imprimir este tipo directamente",
+      stTooLarge: "Demasiado grande, vista previa omitida",
+      stReady: "Imprimible",
+      toastEmpty: "La lista está vacía, agregue primero archivos",
+      toastApplied: "Aplicado a todos los {n} archivos",
+      toastCleared: "Lista vaciada",
+      toastNoPreview: "Este tipo no se puede previsualizar en el navegador, use la versión local",
+      toastOfficeHint: "Word/Excel detectados. Haga doble clic en start.bat en la misma carpeta para imprimir con la versión local",
+      toastNoFiles: "No hay archivos imprimibles",
+      toastDone: "{n} archivos impresos",
+      toastAborted: "{n} archivos impresos, proceso interrumpido",
+      toastNone: "No se realizó ninguna impresión",
+      toastDup: "Archivos duplicados ignorados (mismo nombre, tamaño y fecha de modificación)",
+    },
+  };
+  const LANGS = ['zh-CN','zh-TW','en-US','ja-JP','ko-KR','de-DE','fr-FR','es-ES'];
+  function detectLang(){
+    const nl = (navigator.language || 'en').toLowerCase();
+    if (nl.indexOf('zh-tw') === 0 || nl.indexOf('zh-hk') === 0 || nl.indexOf('zh-mo') === 0) return 'zh-TW';
+    if (nl.indexOf('zh') === 0) return 'zh-CN';
+    if (nl.indexOf('ja') === 0) return 'ja-JP';
+    if (nl.indexOf('ko') === 0) return 'ko-KR';
+    if (nl.indexOf('de') === 0) return 'de-DE';
+    if (nl.indexOf('fr') === 0) return 'fr-FR';
+    if (nl.indexOf('es') === 0) return 'es-ES';
+    return 'en-US';
+  }
+  let lang = (function(){ try { return localStorage.getItem('bpt-lang') || detectLang(); } catch(e){ return detectLang(); } })();
+  if (LANGS.indexOf(lang) < 0) lang = detectLang();
+  const t = key => (I18N[lang] && I18N[lang][key] !== undefined) ? I18N[lang][key] : (I18N['zh-CN'][key] || key);
+  const t2 = (key, n) => t(key).replace('{n}', n);
+  function applyLang(){
+    document.title = t('appTitle');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const key = el.dataset.i18nHtml;
+      if (I18N[lang][key] !== undefined) el.innerHTML = I18N[lang][key];
+    });
+    const sel = $('#langSelect');
+    if (sel) sel.value = lang;
+    render();
+  }
+  function setLang(l){ lang = l; try { localStorage.setItem('bpt-lang', l); } catch(e){} applyLang(); }
+
+  const MAX_IMG = 25 * 1024 * 1024;   // 图片预览上限 25MB
+  let files = [];                       // 文件条目
+  let uid = 0;
+  let printing = false;
+
+  const grid = $('#grid');
+  const dropzone = $('#dropzone');
+  const addInput = $('#addInput');
+  const addInput2 = $('#addInput2');
+  const emptyHint = $('#emptyHint');
+
+  /* ---------- 文件类型判断 ---------- */
+  function kindOf(f){
+    const t = (f.type || '');
+    if (t === 'application/pdf' || /\.pdf$/i.test(f.name)) return 'pdf';
+    if (/^image\//.test(t)) return 'img';
+    if (t === 'text/plain' || /\.txt$/i.test(f.name)) return 'txt';
+    if (/\.(doc|docx|xls|xlsx)$/i.test(f.name)) return 'office';
+    return 'other';
+  }
+  const ACCEPT_IMG = /^image\/(png|jpeg|gif|bmp|webp)/;
+
+  /* ---------- 添加文件 ---------- */
+  function addFiles(list){
+    const src = Array.from(list);
+    // 去重：同名 + 同大小 + 同修改时间视为同一文件（重复选同一批不会翻倍）
+    const arr = src.filter(raw => !files.some(f =>
+      f.name === raw.name && f.size === raw.size && (f.raw.lastModified||0) === (raw.lastModified||0)));
+    if (src.length && !arr.length) { toast(t('toastDup')); return; }
+    arr.forEach(raw => {
+      const k = kindOf(raw);
+      files.push({
+        id: ++uid,
+        raw,
+        kind: k,
+        name: raw.name,
+        size: raw.size,
+        selected: true,
+        copies: 1,
+        orient: 'auto',          // auto | portrait | landscape
+        status: (k === 'other' || k === 'office') ? 'err' : (k === 'img' && raw.size > MAX_IMG ? 'warn' : 'ok'),
+        statusText: k === 'office' ? t('stOffice')
+                    : (k === 'other' ? t('stOther')
+                    : (k === 'img' && raw.size > MAX_IMG ? t('stTooLarge') : t('stReady'))),
+        thumbUrl: null
+      });
+    });
+    if (arr.length) {
+      const pics = files.filter(f => !f.thumbUrl && f.kind === 'img' && f.size <= MAX_IMG);
+      pics.forEach(f => { f.thumbUrl = URL.createObjectURL(f.raw); });
+    }
+    render();
+  }
+
+  /* ---------- 渲染 ---------- */
+  function render(){
+    grid.innerHTML = '';
+    updateBanner();
+    files.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'file-card' + (f.selected ? ' checked' : '');
+      card.dataset.id = f.id;
+
+      const badgeText = f.kind === 'pdf' ? 'PDF' : f.kind === 'txt' ? 'TXT' : f.kind === 'office' ? 'DOC' : '?';
+      const thumb = f.kind === 'img' && f.thumbUrl
+        ? `<img src="${f.thumbUrl}" alt="">`
+        : `<span class="type-badge">${badgeText}</span>`;
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="file-thumb">${thumb}</div>
+          <div class="file-meta">
+            <div class="fname" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div>
+            <div class="fsize">${fmtSize(f.size)}</div>
+            <div class="fstatus ${f.status}">${f.statusText}</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="field orient">
+            <label>${t('orientLabel')}</label>
+            <select data-act="orient">
+              <option value="auto" ${f.orient==='auto'?'selected':''}>${t('orientAuto')}</option>
+              <option value="portrait" ${f.orient==='portrait'?'selected':''}>${t('orientPortrait')}</option>
+              <option value="landscape" ${f.orient==='landscape'?'selected':''}>${t('orientLandscape')}</option>
+            </select>
+          </div>
+          <div class="field copies">
+            <label>${t('copiesLabel')}</label>
+            <input type="number" min="1" max="99" value="${f.copies}" data-act="copies">
+          </div>
+          <div style="flex:1"></div>
+          <button class="icon-btn" data-act="preview" title="${t('preview')}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="card-foot">
+          <button class="check-btn ${f.selected?'checked':''}" data-act="select">
+            <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            ${f.selected ? t('checked') : t('unchecked')}
+          </button>
+          <div class="actions">
+            <button class="icon-btn" data-act="up" title="${t('moveUp')}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button class="icon-btn" data-act="down" title="${t('moveDown')}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <button class="icon-btn danger" data-act="remove" title="${t('remove')}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    emptyHint.style.display = files.length ? 'none' : 'block';
+    updateStats();
+  }
+
+  function updateStats(){
+    const selected = files.filter(f => f.selected);
+    const copies = selected.reduce((s,f) => s + (f.status==='err'?0:f.copies), 0);
+    const ready = selected.filter(f => f.status!=='err').length;
+    $('#stTotal').textContent = files.length;
+    $('#stSelected').textContent = selected.length;
+    $('#stCopies').textContent = copies;
+    $('#stReady').textContent = ready;
+    $('#barSelected').textContent = selected.length;
+    $('#barCopies').textContent = copies;
+    $('#btnPrint').disabled = selected.length === 0 || printing;
+    $('#btnSelectAllText').textContent = allSelected() ? t('deselectAll') : t('selectAll');
+  }
+
+  function updateBanner(){
+    const banner = $('#officeBanner');
+    const count = files.filter(f => f.kind === 'office').length;
+    if (count > 0) {
+      $('#obCount').textContent = count;
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+
+  function allSelected(){
+    return files.length > 0 && files.every(f => f.selected);
+  }
+
+  function findIdx(id){ return files.findIndex(f => f.id === id); }
+
+  /* ---------- 交互 ---------- */
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('.file-card');
+    if (!card) return;
+    const f = files[findIdx(+card.dataset.id)];
+    if (!f) return;
+    const actBtn = e.target.closest('[data-act]');
+    if (!actBtn) return;
+    const act = actBtn.dataset.act;
+
+    if (act === 'select') { f.selected = !f.selected; render(); }
+    else if (act === 'remove') { revoke(f); files.splice(findIdx(f.id),1); render(); }
+    else if (act === 'preview') { preview(f); }
+    else if (act === 'up') {
+      const i = findIdx(f.id); if (i > 0) { files.splice(i-1,0, files.splice(i,1)[0]); render(); }
+    }
+    else if (act === 'down') {
+      const i = findIdx(f.id); if (i < files.length-1) { files.splice(i+1,0, files.splice(i,1)[0]); render(); }
+    }
+  });
+
+  grid.addEventListener('change', e => {
+    const t = e.target;
+    const card = t.closest('.file-card');
+    if (!card) return;
+    const f = files[findIdx(+card.dataset.id)];
+    if (!f) return;
+    if (t.dataset.act === 'orient') { f.orient = t.value; }
+    else if (t.dataset.act === 'copies') {
+      let v = parseInt(t.value, 10);
+      if (isNaN(v) || v < 1) v = 1; if (v > 99) v = 99;
+      f.copies = v; t.value = v;
+    }
+    updateStats();
+  });
+
+  $('#btnSelectAll').addEventListener('click', () => {
+    const to = !allSelected();
+    files.forEach(f => f.selected = to);
+    render();
+  });
+
+  /* 批量设置：应用到全部文件 */
+  $('#btnApplyAll').addEventListener('click', () => {
+    if (!files.length) { toast(t('toastEmpty')); return; }
+    const orient = $('#batchOrient').value;
+    let copies = parseInt($('#batchCopies').value, 10);
+    if (isNaN(copies) || copies < 1) copies = 1;
+    if (copies > 99) copies = 99;
+    $('#batchCopies').value = copies;
+    files.forEach(f => { f.orient = orient; f.copies = copies; });
+    render();
+    toast(t2('toastApplied', files.length));
+  });
+
+  $('#btnClear').addEventListener('click', () => {
+    if (!files.length) return;
+    files.forEach(revoke); files = []; render();
+    toast(t('toastCleared'));
+  });
+
+  /* ---------- 添加事件 ---------- */
+  addInput.addEventListener('change', () => { addFiles(addInput.files); addInput.value=''; });
+  addInput2.addEventListener('change', () => { addFiles(addInput2.files); addInput2.value=''; });
+
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('click', e => {
+    if (e.target.closest('label,input')) return;   // 已有按钮/标签负责，避免重复触发
+    addInput2.click();
+  });
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault(); dropzone.classList.remove('dragover');
+    if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  });
+
+  /* ---------- 预览 ---------- */
+  function preview(f){
+    if (f.kind === 'other' || f.kind === 'office') { toast(t('toastNoPreview')); return; }
+    const body = $('#pvBody'); body.innerHTML = '';
+    const name = $('#pvName'); name.textContent = f.name;
+    const url = URL.createObjectURL(f.raw);
+
+    if (f.kind === 'pdf') {
+      const em = document.createElement('iframe');
+      em.className = 'pdf-embed'; em.src = url; em.title = f.name;
+      body.appendChild(em);
+    } else if (f.kind === 'img') {
+      const img = document.createElement('img');
+      img.className = 'img-view'; img.src = url; img.alt = f.name;
+      body.appendChild(img);
+    } else if (f.kind === 'txt') {
+      const pre = document.createElement('div'); pre.className = 'txt-view';
+      f.raw.text().then(txt => { pre.textContent = txt; body.appendChild(pre); });
+    }
+    $('#previewMask').classList.add('show');
+  }
+  $('#pvClose').addEventListener('click', () => {
+    $('#previewMask').classList.remove('show'); $('#pvBody').innerHTML = '';
+  });
+  $('#previewMask').addEventListener('click', e => {
+    if (e.target === $('#previewMask')) { $('#previewMask').classList.remove('show'); $('#pvBody').innerHTML=''; }
+  });
+
+  /* ---------- 打印 ---------- */
+  $('#btnPrint').addEventListener('click', async () => {
+    if (printing) return;
+    const sel = files.filter(f => f.selected && f.status !== 'err');
+    const officeSel = files.filter(f => f.selected && f.kind === 'office');
+    if (!sel.length && officeSel.length) { toast(t('toastOfficeHint')); return; }
+    if (!sel.length) { toast(t('toastNoFiles')); return; }
+
+    printing = true; updateStats();
+    const prog = $('#progress'); prog.classList.add('show');
+    const progText = $('#progText'), progBar = $('#progBar');
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;visibility:hidden';
+    document.body.appendChild(frame);
+
+    let done = 0;
+    for (const f of sel) {
+      progText.textContent = `${done+1} / ${sel.length}`;
+      progBar.style.width = Math.round(done / sel.length * 100) + '%';
+      const url = URL.createObjectURL(f.raw);
+      const ok = await printOne(frame, f, url);
+      URL.revokeObjectURL(url);
+      if (ok === 'cancelled') break;   // 用户取消打印对话框
+      done++;
+      progText.textContent = `${done} / ${sel.length}`;
+      progBar.style.width = Math.round(done / sel.length * 100) + '%';
+    }
+
+    document.body.removeChild(frame);
+    prog.classList.remove('show');
+    printing = false; updateStats();
+    toast(done === sel.length ? t2('toastDone', done) : (done ? t2('toastAborted', done) : t('toastNone')));
+  });
+
+  // 在隐藏 iframe 中加载文件并触发打印；返回 'done' | 'cancelled'
+  function printOne(frame, f, url){
+    return new Promise(resolve => {
+      let finished = false;
+      const finish = v => { if (!finished){ finished = true; resolve(v); } };
+
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.open(); doc.write('<!DOCTYPE html><html><head><meta charset="utf-8">');
+      if (f.orient === 'landscape') doc.write('<style>@page{size:landscape}</style>');
+      else if (f.orient === 'portrait') doc.write('<style>@page{size:portrait}</style>');
+      doc.write('</head><body style="margin:0">');
+
+      if (f.kind === 'img') {
+        doc.write(`<img src="${url}" style="max-width:100%;max-height:96vh;width:auto;height:auto;display:block;margin:0 auto">`);
+      } else if (f.kind === 'pdf') {
+        // PDF 用 embed 交给浏览器原生 PDF 查看器打印
+        doc.write(`<embed src="${url}" type="application/pdf" style="width:100vw;height:100vh">`);
+      } else if (f.kind === 'txt') {
+        doc.write(`<pre style="font-family:'Microsoft YaHei',sans-serif;font-size:15px;white-space:pre-wrap;padding:24px;line-height:1.8">`);
+        doc.write(escapeHtml(f.previewText || ''));
+        doc.write('</pre>');
+      }
+      doc.write('</body></html>');
+      doc.close();
+
+      // txt 内容需要异步读取
+      if (f.kind === 'txt' && !f.previewText) {
+        f.raw.text().then(txt => {
+          f.previewText = txt;
+          const d2 = frame.contentDocument || frame.contentWindow.document;
+          const pre = d2.querySelector('pre');
+          if (pre) pre.textContent = txt;
+          setTimeout(() => doPrint(frame, f, finish, resolve), 60);
+        }).catch(() => finish('done'));
+      } else {
+        // 给渲染留一点时间
+        setTimeout(() => doPrint(frame, f, finish, resolve), 120);
+      }
+    });
+  }
+
+  function doPrint(frame, f, finish){
+    let beforeClose = null;
+    try {
+      const w = frame.contentWindow;
+      // 复制份数：份数>1 时通过打印多个副本实现（对图片/文本）
+      if (f.kind !== 'pdf' && f.copies > 1) {
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        const body = doc.body;
+        const clone = body.innerHTML;
+        for (let i = 1; i < f.copies; i++) {
+          body.insertAdjacentHTML('beforeend', '<div style="page-break-before:always"></div>' + clone);
+        }
+      }
+      beforeClose = () => {
+        window.removeEventListener('beforeunload', beforeClose);
+        finish('done');
+      };
+      window.addEventListener('beforeunload', beforeClose);
+      w.focus();
+      w.print();
+      setTimeout(beforeClose, 400);
+    } catch(e) {
+      if (beforeClose) window.removeEventListener('beforeunload', beforeClose);
+      finish('done');
+    }
+  }
+
+  /* ---------- 工具函数 ---------- */
+  function revoke(f){ if (f.thumbUrl) URL.revokeObjectURL(f.thumbUrl); }
+  function fmtSize(n){
+    if (n < 1024) return n + ' B';
+    if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+    return (n/1024/1024).toFixed(1) + ' MB';
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  let toastTimer;
+  function toast(msg){
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  $('#langSelect').addEventListener('change', e => setLang(e.target.value));
+
+  applyLang();
+})();
+</script>
+</body>
+</html>

@@ -72,7 +72,7 @@
 
 ## 技术实现
 
-- 界面：PowerShell + WinForms（`System.Windows.Forms`、`System.Drawing.Printing`）
+- 界面：PowerShell + WinForms（`System.Windows.Forms`、`System.Drawing.Printing`），Dock 垂直堆叠 + 标签 AutoSize 动态量宽排列，窗口缩放和多语言切换均自适应不重叠
 - 图片/文本打印：`PrintDocument` 逐页绘制
 - Word/Excel 打印：`Word.Application` / `Excel.Application` COM（自动回退 WPS 的 `KWps` / `KET`）
 - 双面控制：`Set-PrintConfiguration` 临时切换打印机 `DuplexingMode`（OneSided / TwoSidedLongEdge / TwoSidedShortEdge），打印完成后恢复
